@@ -3,12 +3,10 @@
 This repository is the implementation of our COLING 2020 Paper [EmpDG: Multi-resolution Interactive Empathetic Dialogue Generation](https://github.com/qtli/EmpDG).
 
 
-Code and final-version paper will be released before the end of October. Stay tuned!
-
-
 ## Reference & Acknowledgements
 
-If you find our code useful, please cite our paper as follows:
+This work was partly supported by the Tencent AI Lab Rhino-Bird Focused Research Program (JR201932).
+If you find our work useful, please cite our paper as follows:
 
 ```bibtex
 @article{li-etal-2020-empdg,
@@ -20,6 +18,7 @@ If you find our code useful, please cite our paper as follows:
 ```
 
 
+Complete code, data and final-version paper will be released before the end of October. Stay tuned!
 
 
 
