@@ -11,9 +11,9 @@ If you find our work useful, please cite our paper as follows:
 
 ```bibtex
 @inproceedings{li-etal-2020-empdg,
+  title={EmpDG: Multi-resolution Interactive Empathetic Dialogue Generation},
   author={Qintong Li and Hongshen Chen and Zhaochun Ren and Zhaopeng Tu and Zhumin Chen},
   booktitle={COLING},
-  title={EmpDG: Multi-resolution Interactive Empathetic Dialogue Generation},
   year={2020},
 }
 ```
