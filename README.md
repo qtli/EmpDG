@@ -6,6 +6,7 @@ This repository is the implementation of our COLING 2020 Paper [EmpDG: Multi-res
 ## Reference & Acknowledgements
 
 This work was partly supported by the Tencent AI Lab Rhino-Bird Focused Research Program (JR201932).
+
 If you find our work useful, please cite our paper as follows:
 
 ```bibtex
