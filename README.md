@@ -10,14 +10,13 @@ This work was partly supported by the Tencent AI Lab Rhino-Bird Focused Research
 If you find our work useful, please cite our paper as follows:
 
 ```bibtex
-@article{li-etal-2020-empdg,
-  title={EmpDG: Multi-resolution Interactive Empathetic Dialogue Generation},
+@inproceedings{li-etal-2020-empdg,
   author={Qintong Li and Hongshen Chen and Zhaochun Ren and Zhaopeng Tu and Zhumin Chen},
-  journal={COLING},
+  booktitle={COLING},
+  title={EmpDG: Multi-resolution Interactive Empathetic Dialogue Generation},
   year={2020},
 }
 ```
-
 
 Complete code, data and final-version paper will be released before the end of October. Stay tuned!
 
