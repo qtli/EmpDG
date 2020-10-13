@@ -18,7 +18,7 @@ If you find our work useful, please cite our paper as follows:
 }
 ```
 
-Complete code and data will be released before the end of October. Stay tuned!
+The details of code and data will be released before the end of October. Stay tuned!
 
 
 
