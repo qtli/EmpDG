@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="6cb0b5e5-a2d3-4b91-b7b1-d6aa7d46173a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/baselines/EmoPrepend.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/baselines/transformer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_dialog_texts.dev.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_dialog_texts.test.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_dialog_texts.train.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_emotion_texts.dev.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_emotion_texts.test.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_emotion_texts.train.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_target_texts.dev.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_target_texts.test.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/empathetic-dialogue/sys_target_texts.train.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/common.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/data_loader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/data_reader.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1idQdufHyw2HTrZxTDUci0C41vg" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/Model" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Model" />
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6cb0b5e5-a2d3-4b91-b7b1-d6aa7d46173a" name="Default Changelist" comment="" />
+      <created>1602235079241</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1602235079241</updated>
+      <workItem from="1602235080657" duration="33000" />
+      <workItem from="1602235339335" duration="2074000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="2" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="428" y="193" key="FileChooserDialogImpl" timestamp="1602241858158">
+      <screen x="0" y="23" width="1440" height="877" />
+    </state>
+    <state x="428" y="193" key="FileChooserDialogImpl/0.23.1440.877@0.23.1440.877" timestamp="1602241858158" />
+    <state x="142" y="70" key="SettingsEditor" timestamp="1602241862539">
+      <screen x="0" y="23" width="1440" height="877" />
+    </state>
+    <state x="142" y="70" key="SettingsEditor/0.23.1440.877@0.23.1440.877" timestamp="1602241862539" />
+  </component>
+</project>
