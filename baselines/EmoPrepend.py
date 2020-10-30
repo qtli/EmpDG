@@ -236,7 +236,6 @@ class Generator(nn.Module):
 
 
 class EmoP(nn.Module):
-
     def __init__(self, vocab, decoder_number,  model_file_path=None, is_eval=False, load_optim=False):
         super(EmoP, self).__init__()
         self.vocab = vocab

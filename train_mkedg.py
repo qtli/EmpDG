@@ -10,16 +10,12 @@ torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(0)
-from utils.data_reader import Lang
+
 from baselines.transformer import Transformer
 from baselines.EmoPrepend import EmoP
 
-from Model.EmpDG import EmpDG
-from Model.EmpDG_woD import EmpDG_woD
-# from Model.EmpDG_woG import EmpDG_woG
-from Model.EmpDG_D import EmpDG_D
-import adver_train
-
+from Model.MKCE import MK_Enc
+from Model.MK_EDG import MK_Dec
 
 os.environ["CUDA_VISOBLE_DEVICES"] = config.device_id
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -36,8 +32,14 @@ if __name__ == '__main__':
     if config.model == "EmoPrepend":
         model = EmoP(vocab, decoder_number=program_number)
 
-    if "wo_D" in config.model:
-        model = EmpDG_woD(vocab, emotion_number=program_number)
+    if "wo_MKCE" in config.model:
+        model = MK_Enc(vocab, decoder_number=program_number)
+
+    if "wo_E_CatM" in config.model:
+        model = MK_Dec(vocab, decoder_number=program_number)
+
+    if "MK_EDG" in config.model:
+        model = MK_Dec(vocab, decoder_number=program_number)
 
     for n, p in model.named_parameters():
         if p.dim() > 1 and (n != "embedding.lut.weight" and config.pretrain_emb):
@@ -71,7 +73,8 @@ if __name__ == '__main__':
                     model = model.eval()
                     model.epoch = n_iter
                     model.__id__logger = 0
-                    loss_val, ppl_val, bce_val, acc_val = evaluate(model, data_loader_val, ty="valid", max_dec_step=50)
+                    loss_val, ppl_val, bce_val, acc_val, bleu_score_g, bleu_score_b = evaluate(model, data_loader_val, ty="valid",
+                                                                                               max_dec_step=50)
                     writer.add_scalars('loss', {'loss_valid': loss_val}, n_iter)
                     writer.add_scalars('ppl', {'ppl_valid': ppl_val}, n_iter)
                     writer.add_scalars('bce', {'bce_valid': bce_val}, n_iter)
@@ -85,7 +88,7 @@ if __name__ == '__main__':
                         patient = 0
                         ## SAVE MODEL
                         model_save_path = os.path.join(config.save_path,
-                                                       'model_{}_{:.4f}'.format(iter, best_ppl))
+                                                       'model_{}_{:.4f}_{:.4f}_{:.4f}'.format(iter, best_ppl, bleu_score_g, bleu_score_b))
                         torch.save(model.state_dict(), model_save_path)
                         weights_best = deepcopy(model.state_dict())
                         print("best_ppl: {}; patient: {}".format(best_ppl, patient))
@@ -99,15 +102,16 @@ if __name__ == '__main__':
 
         ## SAVE THE BEST
         torch.save({"models": weights_best,
-                    'result': [loss_val, ppl_val, bce_val, acc_val], },
+                    'result': [loss_val, ppl_val, bce_val, acc_val, bleu_score_g, bleu_score_b], },
                    os.path.join('result/' + config.model + '_best.tar'))
 
         ## TESTING
         model.load_state_dict({name: weights_best[name] for name in weights_best})
         model.eval()
         model.epoch = 100
-        loss_test, ppl_test, bce_test, acc_test = evaluate(model, data_loader_tst, ty="test", max_dec_step=50)
-    else:  # testx
+        loss_test, ppl_test, bce_test, acc_test, bleu_score_g, bleu_score_b = evaluate(model, data_loader_tst, ty="test",
+                                                                       max_dec_step=50)
+    else:  # test
         print("TESTING !!!")
         model.cuda()
         model = model.eval()
@@ -116,7 +120,8 @@ if __name__ == '__main__':
 
         model.load_state_dict({name: weights_best[name] for name in weights_best})
         model.eval()
-        loss_test, ppl_test, bce_test, acc_test = evaluate(model, data_loader_tst, ty="test", max_dec_step=50)
+        loss_test, ppl_test, bce_test, acc_test, bleu_score_g, bleu_score_b = evaluate(model, data_loader_tst,
+                                                                                       ty="test", max_dec_step=50)
     print("Model: ", config.model, "End .")
     file_summary = config.save_path + "summary.txt"
     with open(file_summary, 'w') as the_file:

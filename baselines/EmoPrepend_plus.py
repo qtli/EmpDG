@@ -80,7 +80,11 @@ class Encoder(nn.Module):
         
         self.layer_norm = LayerNorm(hidden_size)
         self.input_dropout = nn.Dropout(input_dropout)
-
+        
+        if(config.act):
+            self.act_fn = ACT_basic(hidden_size)
+            self.remainders = None
+            self.n_updates = None
 
     def forward(self, inputs, mask):
         #Add input dropout
@@ -106,6 +110,97 @@ class Encoder(nn.Module):
             for i in range(self.num_layers):
                 x = self.enc[i](x, mask)
         
+            y = self.layer_norm(x)
+        return y
+
+
+class Emo_Encoder(nn.Module):
+    """
+    A Transformer Encoder module.
+    Inputs should be in the shape [batch_size, length, hidden_size]
+    Outputs will have the shape [batch_size, length, hidden_size]
+    Refer Fig.1 in https://arxiv.org/pdf/1706.03762.pdf
+    """
+
+    def __init__(self, embedding_size, hidden_size, num_layers, num_heads, total_key_depth, total_value_depth,
+                 filter_size, max_length=1000, input_dropout=0.0, layer_dropout=0.0,
+                 attention_dropout=0.0, relu_dropout=0.0, use_mask=False, universal=False, concept=False):
+        """
+        Parameters:
+            embedding_size: Size of embeddings
+            hidden_size: Hidden size
+            num_layers: Total layers in the Encoder  2
+            num_heads: Number of attention heads   2
+            total_key_depth: Size of last dimension of keys. Must be divisible by num_head   40
+            total_value_depth: Size of last dimension of values. Must be divisible by num_head  40
+            output_depth: Size last dimension of the final output
+            filter_size: Hidden size of the middle layer in FFN  50
+            max_length: Max sequence length (required for timing signal)
+            input_dropout: Dropout just after embedding
+            layer_dropout: Dropout for each layer
+            attention_dropout: Dropout probability after attention (Should be non-zero only during training)
+            relu_dropout: Dropout probability after relu in FFN (Should be non-zero only during training)
+            use_mask: Set to True to turn on future value masking
+        """
+
+        super(Encoder, self).__init__()
+        self.universal = universal
+        self.num_layers = num_layers
+        self.timing_signal = _gen_timing_signal(max_length, hidden_size)
+
+        if (self.universal):
+            ## for t
+            self.position_signal = _gen_timing_signal(num_layers, hidden_size)
+
+        params = (hidden_size,
+                  total_key_depth or hidden_size,
+                  total_value_depth or hidden_size,
+                  filter_size,
+                  num_heads,
+                  _gen_bias_mask(max_length) if use_mask else None,
+                  layer_dropout,
+                  attention_dropout,
+                  relu_dropout)
+
+        self.embedding_proj = nn.Linear(embedding_size, hidden_size, bias=False)
+        if (self.universal):
+            self.enc = EncoderLayer(*params)
+        else:
+            self.enc = nn.ModuleList([EncoderLayer(*params) for _ in range(num_layers)])
+
+        self.layer_norm = LayerNorm(hidden_size)
+        self.input_dropout = nn.Dropout(input_dropout)
+
+        if (config.act):
+            self.act_fn = ACT_basic(hidden_size)
+            self.remainders = None
+            self.n_updates = None
+
+    def forward(self, inputs, mask):
+        # Add input dropout
+        x = self.input_dropout(inputs)
+
+        # Project to hidden size
+        x = self.embedding_proj(x)
+
+        if (self.universal):
+            if (config.act):
+                x, (self.remainders, self.n_updates) = self.act_fn(x, inputs, self.enc, self.timing_signal,
+                                                                   self.position_signal, self.num_layers)
+                y = self.layer_norm(x)
+            else:
+                for l in range(self.num_layers):
+                    x += self.timing_signal[:, :inputs.shape[1], :].type_as(inputs.data)
+                    x += self.position_signal[:, l, :].unsqueeze(1).repeat(1, inputs.shape[1], 1).type_as(inputs.data)
+                    x = self.enc(x, mask=mask)
+                y = self.layer_norm(x)
+        else:
+            # Add timing signal
+            x += self.timing_signal[:, :inputs.shape[1], :].type_as(inputs.data)
+
+            for i in range(self.num_layers):
+                x = self.enc[i](x, mask)
+
             y = self.layer_norm(x)
         return y
 
@@ -231,10 +326,9 @@ class Generator(nn.Module):
             return F.log_softmax(logit, dim=-1)
 
 
-class Transformer(nn.Module):
-
+class EmoP(nn.Module):
     def __init__(self, vocab, decoder_number,  model_file_path=None, is_eval=False, load_optim=False):
-        super(Transformer, self).__init__()
+        super(EmoP, self).__init__()
         self.vocab = vocab
         self.vocab_size = vocab.n_words
 
@@ -319,6 +413,12 @@ class Transformer(nn.Module):
         src_emb = self.embedding(enc_batch)+emb_mask
         encoder_outputs = self.encoder(src_emb, mask_src)  # (bsz, src_len, emb_dim)
 
+        q_h = encoder_outputs[:, 0]  # (bsz, emb_dim)
+        emotion_logit = self.decoder_key(q_h)
+        loss_emotion = nn.CrossEntropyLoss(reduction='sum')(emotion_logit, batch['emotion_label'])
+        pred_emotion = np.argmax(emotion_logit.detach().cpu().numpy(), axis=1)
+        emotion_acc = accuracy_score(batch["emotion_label"].cpu().numpy(), pred_emotion)
+
         sos_token = torch.LongTensor([config.SOS_idx] * enc_batch.size(0)).unsqueeze(1)  # (bsz, 1)
         if config.USE_CUDA: sos_token = sos_token.cuda()
         dec_batch_shift = torch.cat((sos_token, dec_batch[:, :-1]), 1)  # (bsz, tgt_len)
@@ -333,6 +433,7 @@ class Transformer(nn.Module):
         ## loss: NNL if ptr else Cross entropy
         loss = self.criterion(logit.contiguous().view(-1, logit.size(-1)), dec_batch.contiguous().view(-1))
 
+        loss += loss_emotion
         if config.label_smoothing:
             loss_ppl = self.criterion_ppl(logit.contiguous().view(-1, logit.size(-1)), dec_batch.contiguous().view(-1)).item()
 
@@ -341,7 +442,7 @@ class Transformer(nn.Module):
             self.optimizer.step()
 
         if config.label_smoothing:
-            return loss_ppl, math.exp(min(loss_ppl, 100)), 0, 0
+            return loss_ppl, math.exp(min(loss_ppl, 100)), loss_emotion.item(), emotion_acc
         else:
             return loss.item(), math.exp(min(loss.item(), 100)), 0, 0
 
@@ -405,44 +506,3 @@ class Transformer(nn.Module):
             sent.append(st)
         return sent
     
-    def decoder_topk(self, batch, max_dec_step=30):
-        enc_batch_extend_vocab, extra_zeros = None, None
-        enc_batch = batch["context_batch"]
-
-        mask_src = enc_batch.data.eq(config.PAD_idx).unsqueeze(1)
-        emb_mask = self.embedding(batch["mask_input"])
-        encoder_outputs = self.encoder(self.embedding(enc_batch)+emb_mask, mask_src)
-
-        ys = torch.ones(1, 1).fill_(config.SOS_idx).long()
-        if config.USE_CUDA:
-            ys = ys.cuda()
-        mask_trg = ys.data.eq(config.PAD_idx).unsqueeze(1)
-        decoded_words = []
-        for i in range(max_dec_step+1):
-            if config.project:
-                out, attn_dist = self.decoder(self.embedding_proj_in(self.embedding(ys)),self.embedding_proj_in(encoder_outputs), (mask_src,mask_trg))
-            else:
-                out, attn_dist = self.decoder(self.embedding(ys),encoder_outputs, (mask_src,mask_trg))
-            
-            logit = self.generator(out,attn_dist,enc_batch_extend_vocab, extra_zeros, attn_dist_db=None)
-            filtered_logit = top_k_top_p_filtering(logit[:, -1], top_k=3, top_p=0, filter_value=-float('Inf'))
-            # Sample from the filtered distribution
-            next_word = torch.multinomial(F.softmax(filtered_logit, dim=-1), 1).squeeze()
-            decoded_words.append(['<EOS>' if ni.item() == config.EOS_idx else self.vocab.index2word[ni.item()] for ni in next_word.view(-1)])
-            next_word = next_word.data[0]
-
-            if config.USE_CUDA:
-                ys = torch.cat([ys, torch.ones(1, 1).long().fill_(next_word).cuda()], dim=1)
-                ys = ys.cuda()
-            else:
-                ys = torch.cat([ys, torch.ones(1, 1).long().fill_(next_word)], dim=1)
-            mask_trg = ys.data.eq(config.PAD_idx).unsqueeze(1)
-
-        sent = []
-        for _, row in enumerate(np.transpose(decoded_words)):
-            st = ''
-            for e in row:
-                if e == '<EOS>': break
-                else: st+= e + ' '
-            sent.append(st)
-        return sent

@@ -10,7 +10,7 @@ SOS_idx = 3
 USR_idx = 4  # speak state
 SYS_idx = 5  # listener state
 CLS_idx = 6
-ROOT_idx = 7
+LAB_idx = 7
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,14 +42,11 @@ parser.add_argument("--project", action="store_true")
 parser.add_argument("--emotion_bia", action="store_true")
 parser.add_argument("--global_update", action="store_true")
 parser.add_argument("--topk", type=int, default=0)
-parser.add_argument("--concept_num", type=int, default=3)
-parser.add_argument("--total_concept_num", type=int, default=10)
 parser.add_argument("--teacher_ratio", type=float, default=1.0)
 parser.add_argument("--l1", type=float, default=.0)
 parser.add_argument("--softmax", action="store_true")
 parser.add_argument("--mean_query", action="store_true")
 parser.add_argument("--schedule", type=float, default=0)
-
 
 parser.add_argument("--large_decoder", action="store_true")
 parser.add_argument("--multitask", action="store_true")
@@ -73,6 +70,15 @@ parser.add_argument("--heads", type=int, default=1)
 parser.add_argument("--depth", type=int, default=40)
 parser.add_argument("--filter", type=int, default=50)
 
+## empathetic generator
+parser.add_argument("--resume_g", action="store_true")  # for empdg pre-triain generator
+parser.add_argument("--adver_train", action="store_true")  # default false
+parser.add_argument("--gp_lambda", type=int, default=0.1)
+parser.add_argument("--rnn_hidden_dim", type=int, default=400)
+
+
+## interactive discriminators
+
 def print_opts(opts):
     """Prints the values of all command-line arguments.
     """
@@ -93,8 +99,6 @@ emotion_bia = arg.emotion_bia
 global_update = arg.global_update
 topk = arg.topk
 dropout = arg.dropout
-concept_num = arg.concept_num
-total_concept_num = arg.total_concept_num
 l1 = arg.l1
 oracle = arg.oracle
 beam_search = arg.beam_search
@@ -151,8 +155,11 @@ universal = arg.universal
 act = arg.act
 act_loss_weight = arg.act_loss_weight
 
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m-%d %H:%M')#,filename='save/logs/{}.log'.format(str(name)))
 collect_stats = False
 
 
+resume_g = arg.resume_g
+gp_lambda = arg.gp_lambda
+rnn_hidden_dim = arg.rnn_hidden_dim
+adver_train = arg.adver_train

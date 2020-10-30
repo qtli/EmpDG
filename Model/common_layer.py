@@ -194,11 +194,7 @@ class DecoderLayer(nn.Module):
         """
         NOTE: Inputs is a tuple consisting of decoder inputs and encoder output
         """
-        if config.model == "KED_Encoder":
-            x, encoder_outputs, attention_weight, mask,  = inputs
-            pred_emotion, emotion_contexts = None, None
-        else:
-            x, encoder_outputs, pred_emotion, emotion_contexts, attention_weight, mask, = inputs
+        x, encoder_outputs, attention_weight, mask = inputs
         mask_src, dec_mask = mask
 
         # Layer Normalization before decoder self attention
@@ -214,7 +210,7 @@ class DecoderLayer(nn.Module):
         x_norm = self.layer_norm_mha_enc(x)
 
         # Multi-head encoder-decoder attention
-        y, attention_weight = self.multi_head_attention_enc_dec(x_norm, encoder_outputs, encoder_outputs, mask_src, emotion_contexts=emotion_contexts)
+        y, attention_weight = self.multi_head_attention_enc_dec(x_norm, encoder_outputs, encoder_outputs, mask_src)
 
         # Dropout and residual after encoder-decoder attention
         x = self.dropout(x + y)
@@ -314,7 +310,7 @@ class MultiHeadAttention(nn.Module):
         shape = x.shape
         return x.permute(0, 2, 1, 3).contiguous().view(shape[0], shape[2], shape[3] * self.num_heads)
 
-    def forward(self, queries, keys, values, mask, vad=None, emotion_contexts=None):
+    def forward(self, queries, keys, values, mask):
 
         # Do a linear for each component
         queries = self.query_linear(queries)
@@ -331,11 +327,6 @@ class MultiHeadAttention(nn.Module):
 
         # Combine queries and keys
         logits = torch.matmul(queries, keys.permute(0, 1, 3, 2))  # (bsz, head, tgt_len, src_len)
-
-        if vad is not None:  # (bsz, src_len)
-            vad = vad.unsqueeze(1).unsqueeze(1)
-            vad_weights = vad.repeat(1, self.num_heads, logits.size(2), 1)  # (bsz, head, tgt_len, src_len)
-            logits += self.W_vad * vad_weights
 
         if mask is not None:
             mask = mask.unsqueeze(1)  # [B, 1, 1, T_values]
@@ -359,11 +350,6 @@ class MultiHeadAttention(nn.Module):
 
         # Linear to get output
         outputs = self.output_linear(contexts)  # 50 -> 300
-
-        if emotion_contexts is not None:
-            emotion_contexts = emotion_contexts.unsqueeze(1).repeat(1, outputs.size(1), 1)
-            outputs = torch.cat((outputs, emotion_contexts), dim=2)
-            outputs = self.emotion_output_linear(outputs)
 
         # return outputs, attetion_weights
         return outputs, torch.softmax(attetion_weights, dim=-1)

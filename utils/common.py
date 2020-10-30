@@ -2,6 +2,7 @@ from utils import config
 import numpy as np
 import pickle
 import re
+import json
 import math
 import pdb
 import torch
@@ -287,10 +288,10 @@ class Translator(object):
         return ret_sentences  # , batch_scores
 
 
-def print_custum(emotion, dial, concept, ref, hyp_g, hyp_b):
+def print_custum(emotion, dial, emotion_context, ref, hyp_g, hyp_b):
     print("emotion:{}".format(emotion))
     print("Context:{}".format(dial))
-    print("Concept:{}".format(concept))
+    print("Emotion_context:{}".format(emotion_context))
     print("Beam: {}".format(hyp_b))
     print("Greedy:{}".format(hyp_g))
     print("Ref:{}".format(ref))
@@ -357,28 +358,84 @@ def evaluate(model, data, ty='valid', max_dec_step=30):
                 ref.append(rf)
                 print_custum(emotion=batch["emotion_txt"][i],
                              dial=[" ".join(s) for s in batch['context_txt'][i]],
-                             concept=str(batch['concept_txt'][i]),
+                             emotion_context=str(batch['emotion_context_txt'][i]),
                              ref=rf,
                              hyp_g=greedy_sent,
                              hyp_b=[])
                 outputs.write("emotion:{} \n".format(batch["emotion_txt"][i]))
                 outputs.write("Context:{} \n".format(
                     [" ".join(s) for s in batch['context_txt'][i]]))
+                outputs.write("Emotion_context:{} \n".format(batch["emotion_context_txt"][i]))
                 outputs.write("Pred:{} \n".format(greedy_sent))
                 outputs.write("Ref:{} \n".format(rf))
 
-        pbar.set_description("loss:{:.4f} ppl:{:.1f}".format(np.mean(l), math.exp(np.mean(l))))
+        pbar.set_description("loss:{:.4f}; ppl:{:.1f}".format(np.mean(l), math.exp(np.mean(l))))
 
     loss = np.mean(l)
     ppl = np.mean(p)
     bce = np.mean(bce)
     acc = np.mean(acc)
-
+    print()
     print("EVAL\tLoss\tPPL\tAccuracy")
     print(
         "{}\t{:.4f}\t{:.4f}\t{:.4f}".format(ty, loss, math.exp(loss), acc))
 
     return loss, math.exp(loss), bce, acc
+
+EMODICT = json.load(open('empathetic-dialogue/NRCDict.json'))[0]
+def get_emotion_words(utt_words):
+    emo_ws = []
+    for u in utt_words:
+        if u in EMODICT:
+            emo_ws.append(u)
+    return emo_ws
+
+def gen_disc_train_data(model, data, ty='test', max_dec_step=50):
+    output_data =  {'context':[],'emotion_context':[],'target':[],'target_emotion':[],'feedback':[],'feedback_emotion':[],'emotion':[],'situation':[],'pred':[],'pred_emotion':[]}
+    model.__id__logger = 0
+    print("---------------------------begin generating data for disc---------------------------")
+    l = []
+    p = []
+    bce = []
+    acc = []
+
+    pbar = tqdm(enumerate(data), total=len(data))
+    for j, batch in pbar:
+        loss, ppl, bce_prog, acc_prog = model.train_one_batch(batch, 0, train=False)
+        l.append(loss)
+        p.append(ppl)
+        bce.append(bce_prog)
+        acc.append(acc_prog)
+        sent_g = model.predict(batch, max_dec_step=max_dec_step)  # sentences list, each sentence is a string.
+        for i, greedy_sent in enumerate(sent_g):
+            output_data['target'].append(batch["target_txt"][i])
+            output_data['target_emotion'].append(batch["target_txt"][i])
+            output_data['context'].append(batch["context_txt"][i])
+            output_data['emotion_context'].append(batch["emotion_context_txt"][i])
+            output_data['emotion'].append(batch["emotion_txt"][i])
+            output_data['feedback'].append(batch["feedback_txt"][i])
+            output_data['feedback_emotion'].append(batch["feedback_emotion_txt"][i])
+            output_data['situation'].append(batch["situation_txt"][i])
+
+            if i == 0:
+                print(greedy_sent.split())
+                print(get_emotion_words(greedy_sent.split()))
+                print("--------------")
+            output_data['pred'].append(greedy_sent.split())
+            output_data['pred_emotion'].append(get_emotion_words(greedy_sent.split()))
+
+        pbar.set_description("loss:{:.4f}; ppl:{:.1f}".format(np.mean(l), math.exp(np.mean(l))))
+
+    loss = np.mean(l)
+    ppl = np.mean(p)
+    bce = np.mean(bce)
+    acc = np.mean(acc)
+    print()
+    print("EVAL\tLoss\tPPL\tAccuracy")
+    print(
+        "{}\t{:.4f}\t{:.4f}\t{:.4f}".format(ty, loss, math.exp(loss), acc))
+
+    return output_data
 
 
 
