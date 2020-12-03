@@ -31,8 +31,10 @@ pip install -r requirements.txt
 ```bash
 # Pre-train Empathetic Generator (EmpDG_woD)
 python train.py --cuda --label_smoothing --noam --emb_dim 300 --hidden_dim 300 --hop 1 --heads 2 --pretrain_emb --model EmpDG_woD --device_id 0 --save_path save/EmpDG_woD/ --pointer_gen
+
 # Pre-train two Interactive Discriminators
 python adver_train.py --cuda --resume_g --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --emotion_disc --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG_D/
+
 # Joint-train two components (EmpDG)
 python adver_train.py --cuda --label_smoothing --resume_g --resume_d  --noam --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --emotion_disc --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG/ --d_steps 1 --g_steps 5 --pointer_gen
 ```
