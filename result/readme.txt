@@ -1,0 +1,1 @@
+NOTE: This folder saves the model checkpoints.
