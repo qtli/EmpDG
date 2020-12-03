@@ -19,6 +19,8 @@ pip install -r requirements.txt
 ```
 - Download GloVe vectors from [**here (glove.6B.300d.txt)**](http://nlp.stanford.edu/data/glove.6B.zip) and put it into `/vectors/`.
 
+- For reproducibility purposes, we place the model checkpoints at [**Google Drive**](https://drive.google.com/drive/folders/1EIIZ9SFJCE1JavUal39J_NN2WxP5JK6H?usp=sharing). You could download and move it under `/result/`.
+
 - To skip training, please check folder `/Predictions/`.
 
 
