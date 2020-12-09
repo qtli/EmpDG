@@ -276,6 +276,7 @@ def adver_joint_train_gd(model_g, model_d, itr_num=5000):
             start_time = time.time()
             for i in range(config.d_steps):  # D: 1 steps
                 batch_data = next(data_iter)
+                # generate data using model_g for model_d.
                 pred, pred_emotion, context, emotion_context = model_g.g_for_d(batch_data)
                 new_batch_data = disc_batch(vocab, batch_data, pred, pred_emotion)
 
@@ -292,11 +293,15 @@ def adver_joint_train_gd(model_g, model_d, itr_num=5000):
 
                 model_g = model_g.eval()
                 model_g.__id__logger = 0
+                config.adver_train = True
                 loss_val, ppl_val, bce_val, acc_val, d1,d2 = evaluate(model_g, data_loader_val, ty="valid", max_dec_step=50, adver_train=True)
 
                 if acc_val > best_acc:
                     best_acc = acc_val
                     patient = 0
+
+                    if not os.path.exists('result/adver_train/'):
+                        os.makedirs('result/adver_train/')
 
                     ## SAVE MODEL-d
                     torch.save(model_g.state_dict(),

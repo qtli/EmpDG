@@ -297,6 +297,8 @@ def adver_joint_train_gd(model_g, model_d, itr_num=5000):
                     best_acc = acc_val
                     patient = 0
 
+                    if not os.path.exists('result/adver_train_wo_g'):
+                        os.makedirs('result/adver_train_wo_g')
                     ## SAVE MODEL-d
                     torch.save(model_g.state_dict(),
                                os.path.join('result/adver_train_wo_g/model_g_{}_{:.4f}.tar'.format(current_step, best_acc)))
