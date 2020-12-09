@@ -381,22 +381,26 @@ def evaluate(model, data, ty='valid', max_dec_step=30, adver_train=False):
                     outputs.write("Ref:{} \n".format(rf))
 
         pbar.set_description("loss:{:.4f}; ppl:{:.1f}".format(np.mean(l), math.exp(np.mean(l))))
-    ma_dist1, ma_dist2, mi_dist1, mi_dist2, avg_len = get_dist(res)
-
 
     loss = np.mean(l)
     ppl = np.mean(p)
     bce = np.mean(bce)
     acc = np.mean(acc)
     print()
-    print("EVAL\tLoss\tPPL\tAccuracy\tDist-1\tDist-2")
-    print(
-        "{}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.2f}\t{:.2f}".format(ty, loss, math.exp(loss), acc,
-                                                            mi_dist1 * 100, mi_dist2 * 100))
+
     if adver_train:
-        print("yesss!!!!")
+        print("adver_training !")
+        ma_dist1, ma_dist2, mi_dist1, mi_dist2, avg_len = get_dist(res)
+
+        print("EVAL\tLoss\tPPL\tAccuracy\tDist-1\tDist-2")
+        print(
+            "{}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.2f}\t{:.2f}".format(ty, loss, math.exp(loss), acc,
+                                                                mi_dist1 * 100, mi_dist2 * 100))
         return loss, math.exp(loss), bce, acc, mi_dist1 * 100, mi_dist2 * 100
     else:
+        print("EVAL\tLoss\tPPL\tAccuracy")
+        print(
+            "{}\t{:.4f}\t{:.4f}\t{:.4f}".format(ty, loss, math.exp(loss), acc))
         return loss, math.exp(loss), bce, acc
 
 EMODICT = json.load(open('empathetic-dialogue/NRCDict.json'))[0]

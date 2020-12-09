@@ -1,0 +1,1 @@
+Please put the GloVe vectors in this folder.
