@@ -23,18 +23,21 @@ if torch.cuda.is_available():
     torch.cuda.set_device(int(config.device_id))
 
 if __name__ == '__main__':
+    if not os.path.exists(config.save_path):
+        os.makedirs(config.save_path)
+
     data_loader_tra, data_loader_val, data_loader_tst, vocab, program_number = prepare_data_seq(batch_size=config.batch_size)
 
     if config.model == "Transformer":
         model = Transformer(vocab, decoder_number=program_number)
 
-    if config.model == "EmoPrepend":
+    if (config.model == "EmoPrepend") or (config.model == "EmpDG_woG"):
         model = EmoP(vocab, decoder_number=program_number)
 
     if config.model == "MoEL":  # see source code at: https://github.com/HLTCHKUST/MoEL
         model = MoEL(vocab, decoder_number=program_number)
 
-    if (config.model == "EmpDG_woD") or (config.model == "EmpDG"):  # train/test or test
+    if (config.model == "EmpDG_woD") or (config.model == "EmpDG"):  # train/test for EmpDG_woD; test for EmpDG
         model = Empdg_G(vocab, emotion_number=program_number)
 
     for n, p in model.named_parameters():
@@ -110,14 +113,17 @@ if __name__ == '__main__':
         model.cuda()
         model = model.eval()
         if config.specify_model:
-            checkpoint = torch.load(config.resume_path)
+            checkpoint = torch.load(config.resume_path, map_location=lambda storage, location: storage)
             model.load_state_dict(checkpoint)
         else:
             checkpoint = torch.load('result/' + config.model + '_best.tar', map_location=lambda storage, location: storage)
-            weights_best = checkpoint['models']
+            if config.model == "EmpDG" or config.model == "EmpDG_woG":
+                weights_best = checkpoint['models_g']
+            else:
+                weights_best = checkpoint['models']
             model.load_state_dict({name: weights_best[name] for name in weights_best})
         model.eval()
-        loss_test, ppl_test, bce_test, acc_test = evaluate(model, data_loader_tst, ty="test", max_dec_step=50)
+        loss_test, ppl_test, bce_test, acc_test, dist1, dist2 = evaluate(model, data_loader_tst, ty="test", max_dec_step=50)
     print("Model: ", config.model, "End .")
     if config.specify_model:
         file_summary = "_summary.txt"
@@ -127,4 +133,5 @@ if __name__ == '__main__':
         the_file.write("EVAL\tLoss\tPPL\tAccuracy\n")
         the_file.write(
             "{}\t{:.4f}\t{:.4f}\t{:.4f}".format("test", loss_test, ppl_test, acc_test))
+
 

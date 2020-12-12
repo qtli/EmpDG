@@ -41,15 +41,22 @@ python adver_train.py --cuda --label_smoothing --resume_g --resume_d  --noam --e
 
 > EmpDG_woG
 ```bash
-python adver_train_no_eg.py --cuda --label_smoothing --resume_g --resume_d --noam --emb_dim 300 --rnn_hidden_dim 300  --hidden_dim 300 --hop 1 --heads 2 --cuda --pretrain_emb --model EmpDG_woG --device_id 0 --save_path save/EmpDG_woG/ --d_steps 1 --g_steps 5 --pointer_gen 
+# We regard the baseline EmoPrepend as generator, which only considers the coarse-grained emotional factor. 
+# We only use the semantic discriminator to distinguish the generated responses and the gold ones. 
+
+python adver_train_no_eg.py --cuda --label_smoothing --noam --emb_dim 300 --rnn_hidden_dim 300  --hidden_dim 300 --hop 1 --heads 2 --cuda --pretrain_emb --model EmpDG_woG --device_id 0 --save_path save/EmpDG_woG/ --d_steps 1 --g_steps 5 --pointer_gen 
 ```
+
 
 ### Testing
 > EmpDG
+>
+> Make sure that the trained model `result/EmpDG_best.tar` exists.
 ```bash
 python train.py --test --cuda --label_smoothing --noam --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG/ --pointer_gen
 ```
 
+> Interact with EmpDG (ToDo)
 
 
 ## Reference & Acknowledgements

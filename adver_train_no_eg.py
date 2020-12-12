@@ -326,6 +326,9 @@ def adver_joint_train_gd(model_g, model_d, itr_num=5000):
 
 
 if __name__ == '__main__':
+    if not os.path.exists(config.save_path):
+        os.makedirs(config.save_path)
+
     data_loader_tra, data_loader_val, data_loader_tst, vocab, program_number = prepare_data_seq(batch_size=config.batch_size, adver_train=True)
     if config.model == "EmpDG_woG":
         print('=====================STEP 1: Pre-train Generator=====================')
