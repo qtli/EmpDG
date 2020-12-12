@@ -56,7 +56,9 @@ python adver_train_no_eg.py --cuda --label_smoothing --noam --emb_dim 300 --rnn_
 python train.py --test --cuda --label_smoothing --noam --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG/ --pointer_gen
 ```
 
-> Interact with EmpDG (ToDo)
+### Demo 
+
+ToDo
 
 
 ## Reference & Acknowledgements
