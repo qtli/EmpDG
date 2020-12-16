@@ -27,38 +27,39 @@ pip install -r requirements.txt
 ## Run code
 
 ### Training
-> EmpDG
+EmpDG
 ```bash
-# Pre-train Empathetic Generator (EmpDG_woD)
-python train.py --cuda --label_smoothing --noam --emb_dim 300 --hidden_dim 300 --hop 1 --heads 2 --pretrain_emb --model EmpDG_woD --device_id 0 --save_path save/EmpDG_woD/ --pointer_gen
-
-# Pre-train two Interactive Discriminators
-python adver_train.py --cuda --resume_g --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --emotion_disc --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG_D/
-
-# Joint-train two components (EmpDG)
-python adver_train.py --cuda --label_smoothing --resume_g --resume_d  --noam --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --emotion_disc --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG/ --d_steps 1 --g_steps 5 --pointer_gen
+# 1. Pre-train Empathetic Generator (EmpDG_woD)
+# 2. Pre-train two Interactive Discriminators
+# 3. Joint-train two components
+python adver_train.py --cuda --label_smoothing --noam --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --emotion_disc --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG/ --d_steps 1 --g_steps 5 --pointer_gen
 ```
 
-> EmpDG_woG
+EmpDG_woD
+```bash
+# Empathetic Generator
+python train.py --cuda --label_smoothing --noam --emb_dim 300 --hidden_dim 300 --hop 1 --heads 2 --pretrain_emb --model EmpDG_woD --device_id 0 --save_path save/EmpDG_woD/ --pointer_gen
+```
+EmpDG_woG
 ```bash
 # We regard the baseline EmoPrepend as generator, which only considers the coarse-grained emotional factor. 
 # We only use the semantic discriminator to distinguish the generated responses and the gold ones. 
 
 python adver_train_no_eg.py --cuda --label_smoothing --noam --emb_dim 300 --rnn_hidden_dim 300  --hidden_dim 300 --hop 1 --heads 2 --cuda --pretrain_emb --model EmpDG_woG --device_id 0 --save_path save/EmpDG_woG/ --d_steps 1 --g_steps 5 --pointer_gen 
 ```
+> Add `--resume_g --resume_d` into the command to directly use the pre-trained generator or discriminator. 
+
+
 
 
 ### Testing
-> EmpDG
->
+EmpDG
 > Make sure that the trained model `result/EmpDG_best.tar` exists.
 ```bash
 python train.py --test --cuda --label_smoothing --noam --emb_dim 300 --rnn_hidden_dim 300 --hidden_dim 300  --hop 1 --heads 2 --pretrain_emb --model EmpDG --device_id 0 --save_path save/EmpDG/ --pointer_gen
 ```
 
-### Demo 
-
-
+### Demo
 
 
 ## Reference & Acknowledgements
