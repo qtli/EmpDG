@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torch.autograd import Variable
 import numpy as np
 import math
 from Model.common_layer import EncoderLayer, DecoderLayer, MultiHeadAttention, Conv, PositionwiseFeedForward, LayerNorm , _gen_bias_mask ,_gen_timing_signal, share_embedding, LabelSmoothing, NoamOpt, _get_attn_subsequent_mask
@@ -252,7 +252,7 @@ class Decoder(nn.Module):
 
     def forward(self, inputs, encoder_output, mask=None):
         mask_src, mask_trg = mask
-        dec_mask = torch.gt(mask_trg.bool() + self.mask[:, :mask_trg.size(-1), :mask_trg.size(-1)].bool(), 0)
+        dec_mask = torch.gt(mask_trg.bool() + self.mask[:, :mask_trg.size(-1), :mask_trg.size(-1)].bool(), 0).to(config.device)
         # Add input dropout
         x = self.input_dropout(inputs)
         x = self.embedding_proj(x)
@@ -306,9 +306,15 @@ class Generator(nn.Module):
 
             attn_dist = F.softmax(attn_dist / temp, dim=-1)
             attn_dist_ = (1 - alpha) * attn_dist
-            enc_batch_extend_vocab_ = torch.cat([enc_batch_extend_vocab.unsqueeze(1)] * x.size(1),
-                                                1)  ## extend for all seq
-            logit = torch.log(vocab_dist_.scatter_add(2, enc_batch_extend_vocab_, attn_dist_))
+            enc_batch_extend_vocab_ = torch.cat([enc_batch_extend_vocab.unsqueeze(1)] * x.size(1),1)  ## extend for all seq
+
+            extra_zeros = Variable(torch.zeros((logit.size(0), max_oov_length))).to(config.device)
+            if extra_zeros is not None:
+                extra_zeros = torch.cat([extra_zeros.unsqueeze(1)] * x.size(1), 1)
+                vocab_dist_ = torch.cat([vocab_dist_, extra_zeros], 2)
+
+            logit = torch.log(vocab_dist_.scatter_add(2, enc_batch_extend_vocab_, attn_dist_) + 1e-18)
+
             return logit
         else:
             return F.log_softmax(logit, dim=-1)
@@ -494,6 +500,11 @@ class Empdg_G(nn.Module):
         oovs = batch["oovs"]
         max_oov_length = len(sorted(oovs, key=lambda i: len(i), reverse=True)[0])
 
+        if config.noam:
+            self.optimizer.optimizer.zero_grad()
+        else:
+            self.optimizer.zero_grad()
+
         ## Semantic Understanding
         mask_semantic = enc_batch.data.eq(config.PAD_idx).unsqueeze(1)  # (bsz, src_len)->(bsz, 1, src_len)
         sem_emb_mask = self.embedding(batch["mask_context"])  # dialogue state  E_d
@@ -534,8 +545,17 @@ class Empdg_G(nn.Module):
             # Sample from the filtered distribution
             # next_word = torch.multinomial(F.softmax(filtered_logit, dim=-1), 1).squeeze()
             _, next_word = torch.max(prob[:, -1], dim=1)
-            decoded_words.append(['<EOS>' if ni.item() == config.EOS_idx else self.vocab.index2word[ni.item()] for ni in
-                                  next_word.view(-1)])
+
+            batch_words = []
+            for i_batch, ni in enumerate(next_word.view(-1)):
+                if ni.item() == config.EOS_idx:
+                    batch_words.append('<EOS>')
+                elif ni.item() in self.vocab.index2word:
+                    batch_words.append(self.vocab.index2word[ni.item()])
+                else:
+                    batch_words.append(oovs[i_batch][ni.item() - self.vocab.n_words])
+                    next_word[i_batch] = config.UNK_idx
+            decoded_words.append(batch_words)
             next_word = next_word.data[0]
 
             if config.USE_CUDA:
@@ -557,7 +577,6 @@ class Empdg_G(nn.Module):
                     st += e + ' '
             sent.append(st)
         return sent
-
 
     def predict(self, batch, max_dec_step=30):
         enc_batch_ext, extra_zeros = None, None
@@ -632,7 +651,6 @@ class Empdg_G(nn.Module):
                     st += e + ' '
             sent.append(st)
         return sent
-
 
     def g_for_d(self, batch, max_dec_step=30):
         enc_batch_ext, extra_zeros = None, None
